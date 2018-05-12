@@ -18,13 +18,21 @@ const list = [
     objectID: 1,
 }, ];
 
+function isSearched(searchTerm) {
+  return function(item) {
+    // some condition which returns true or false
+    return item.title.toLowerCase().includes(searchTerm.toLowerCase());
+  }
+}
+
 // App =>（es6类组件，是个组件声明）
 //<App /> => (实例化)
 class App extends Component {
   constructor(props){
     super(props);
     this.state = {
-      list: list,
+      list,
+      searchTerm: ''
     }
   this.onDismiss = this.onDismiss.bind(this);
   this.onSearchChange = this.onSearchChange.bind(this);
@@ -35,15 +43,19 @@ class App extends Component {
     });
     this.setState({list:updatedList})
   }
+  onSearchChange(event){
+    console.log("onSearchChange",event,event.target.value);
+    this.setState({ searchTerm: event.target.value });
+  }
   render() {
- 
+    const { searchTerm, list } = this.state;
     return (
       //元素（element） JSX
     <div className="App"  > 
     <form>
-          <input onChange={this.onSearchChange} type="text" />
-</form>
-      {this.state.list.map((item)=>{
+          <input value={searchTerm} onChange={this.onSearchChange} type="text" />
+    </form>
+      {list.filter(isSearched(searchTerm)).map((item)=>{
         return (
         <div key={item.objectID}> <span>
                 <a href={item.url}>{item.title}</a>
