@@ -26,13 +26,23 @@ class App extends Component {
     this.state = {
       list: list,
     }
-  
+  this.onDismiss = this.onDismiss.bind(this);
+  this.onSearchChange = this.onSearchChange.bind(this);
+  }
+  onDismiss(id){
+    const updatedList = this.state.list.filter((item)=>{
+        return item.objectID !==id;
+    });
+    this.setState({list:updatedList})
   }
   render() {
  
     return (
       //元素（element） JSX
     <div className="App"  > 
+    <form>
+          <input onChange={this.onSearchChange} type="text" />
+</form>
       {this.state.list.map((item)=>{
         return (
         <div key={item.objectID}> <span>
@@ -41,6 +51,13 @@ class App extends Component {
               <span>{item.author}</span>
               <span>{item.num_comments}</span>
               <span>{item.points}</span>
+              <span>
+              <button
+                // onClick={(this.onDismiss}
+                onClick={() => this.onDismiss(item.objectID)}
+                type="button"> Dismiss
+              </button>
+            </span>
 </div>)
       })}
     </div>
