@@ -1,6 +1,12 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+// import logo from './logo.svg';
 import './App.css';
+const DEFAULT_QUERY = 'redux';
+const PATH_BASE = 'https://hn.algolia.com/api/v1';
+const PATH_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${PARAM_SEARCH}&${PARAM_PAGE}`;
 const list = [
   {
     title: 'React',
@@ -31,31 +37,110 @@ class App extends Component {
   constructor(props){
     super(props);
     this.state = {
-      list,
-      searchTerm: ''
+      results: null,
+      searchKey: '',
+      searchTerm: DEFAULT_QUERY
     }
+    this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
+  this.setSearchTopStories = this.setSearchTopStories.bind(this); 
+  this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
   this.onDismiss = this.onDismiss.bind(this);
   this.onSearchChange = this.onSearchChange.bind(this);
+  this.onSearchSubmit = this.onSearchSubmit.bind(this);
   }
+
+  needsToSearchTopStories(searchTerm) {
+    return !this.state.results[searchTerm];
+}
+  onSearchSubmit(event) {
+
+    const { searchTerm } = this.state;
+    this.setState({ searchKey: searchTerm });
+    if (this.needsToSearchTopStories(searchTerm)) {
+      this.fetchSearchTopStories(searchTerm);
+}
+
+    event.preventDefault();
+  }
+  setSearchTopStories(result) {
+    const { hits, page } = result;
+    const { searchKey, results } = this.state;
+    const oldHits = results && results[searchKey]
+      ? results[searchKey].hits
+      : [];
+
+ 
+    const updatedHits = [
+      ...oldHits,
+      ...hits
+    ];
+    this.setState({
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits, page }
+}
+});
+    console.log("updatedHits",updatedHits);
+    
+
+  
+    // this.setState({ result });
+  }
+  fetchSearchTopStories(searchTerm,page = 0) {
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`)
+      .then(response => response.json())
+      .then(result => this.setSearchTopStories(result))
+      .catch(e => e);
+  }
+  componentDidMount() {
+    const { searchTerm } = this.state;
+    this.setState({ searchKey: searchTerm });
+    this.fetchSearchTopStories(searchTerm);
+  }
+
   onDismiss(id){
-    const updatedList = this.state.list.filter((item)=>{
-        return item.objectID !==id;
-    });
-    this.setState({list:updatedList})
+    const { searchKey, results } = this.state;
+    const { hits, page } = results[searchKey];
+    const isNotId = item => item.objectID !== id;
+    const updatedHits = hits.filter(isNotId);
+    this.setState({
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits, page }
+      } });
   }
   onSearchChange(event){
     console.log("onSearchChange",event,event.target.value);
     this.setState({ searchTerm: event.target.value });
   }
   render() {
-    const { searchTerm, list } = this.state;
+    const {
+      searchTerm,
+      results,
+      searchKey
+    } = this.state;
+    const page = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].page
+) || 0;
+    const list = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].hits
+) || [];
     return (
       //元素（element） JSX
     <div className="page"  > 
       <div className="interactions">
       
-    <Search   value={searchTerm} onChange = {this.onSearchChange}>Search</Search>
-    <Table list={list} pattern={searchTerm} onDismiss={this.onDismiss} />
+        <Search  onSubmit={this.onSearchSubmit} value={searchTerm} onChange = {this.onSearchChange}>Search</Search>
+        <Table list={list} pattern={searchTerm} onDismiss={this.onDismiss} />
+         <div className="interactions">
+            <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
+              More
+            </Button>
+          </div>
       </div>
  
     </div>
@@ -76,13 +161,16 @@ class Button extends Component { render() {
   } }
 class Search extends Component {
   render() {
-    const { value, onChange,children } = this.props;
+    const { value, onChange,onSubmit,children } = this.props;
     return (
-      <form>{children}
+      <form onSubmit={onSubmit}>
         <input
           type="text"
           value={value}
           onChange={onChange}/> 
+           <button type="submit">
+      {children}
+    </button>
       </form>
     ); }
 }
