@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 // import logo from './logo.svg';
 import './App.css';
+import PropTypes from 'prop-types';
 const DEFAULT_QUERY = 'redux';
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
@@ -39,7 +40,8 @@ class App extends Component {
     this.state = {
       results: null,
       searchKey: '',
-      searchTerm: DEFAULT_QUERY
+      searchTerm: DEFAULT_QUERY,
+      error: null,
     }
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
   this.setSearchTopStories = this.setSearchTopStories.bind(this); 
@@ -90,7 +92,7 @@ class App extends Component {
     fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`)
       .then(response => response.json())
       .then(result => this.setSearchTopStories(result))
-      .catch(e => e);
+      .catch(e => this.setState({error: e}));
   }
   componentDidMount() {
     const { searchTerm } = this.state;
@@ -117,25 +119,34 @@ class App extends Component {
     const {
       searchTerm,
       results,
-      searchKey
+      searchKey,
+      error
     } = this.state;
     const page = (
       results &&
       results[searchKey] &&
       results[searchKey].page
-) || 0;
+    ) || 0;
     const list = (
       results &&
       results[searchKey] &&
       results[searchKey].hits
-) || [];
+    ) || [];
+
+
     return (
       //元素（element） JSX
     <div className="page"  > 
       <div className="interactions">
       
         <Search  onSubmit={this.onSearchSubmit} value={searchTerm} onChange = {this.onSearchChange}>Search</Search>
+        { error
+          ? <div className="interactions">
+              <p>Something went wrong.</p>
+            </div>
+        :
         <Table list={list} pattern={searchTerm} onDismiss={this.onDismiss} />
+        }
          <div className="interactions">
             <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
               More
@@ -148,8 +159,10 @@ class App extends Component {
   }
 }
 class Button extends Component { render() {
+  
   const { onClick, className, children,
   } = this.props;
+
   return ( 
       <button
           onClick={onClick}
@@ -159,6 +172,11 @@ class Button extends Component { render() {
        </button> 
   );
   } }
+  Button.propTypes = {
+    onClick: PropTypes.func.isRequired,
+    className: PropTypes.string,
+    children: PropTypes.node.isRequired,
+  };
 class Search extends Component {
   render() {
     const { value, onChange,onSubmit,children } = this.props;
@@ -199,5 +217,13 @@ class Table extends Component {
     ;
   } 
 }
-
+Table.propTypes = {
+  list: PropTypes.array.isRequired,
+  onDismiss: PropTypes.func.isRequired,
+};
 export default App;
+export {
+  Button,
+  Search,
+  Table,
+}
